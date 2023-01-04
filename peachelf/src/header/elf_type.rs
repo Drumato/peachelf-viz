@@ -14,7 +14,7 @@ pub enum ElfType {
     Dyn,
     #[serde(rename = "core")]
     Core,
-    Num(types::Elf64Half),
+    Unknown(types::Elf64Half),
 }
 
 impl From<types::Elf64Half> for ElfType {
@@ -25,7 +25,7 @@ impl From<types::Elf64Half> for ElfType {
             2 => Self::Exec,
             3 => Self::Dyn,
             4 => Self::Core,
-            _ => Self::Num(v),
+            _ => Self::Unknown(v),
         }
     }
 }
@@ -33,7 +33,7 @@ impl From<types::Elf64Half> for ElfType {
 impl std::fmt::Display for ElfType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Num(v) => {
+            Self::Unknown(v) => {
                 return write!(f, "unknown({:x})", v);
             }
 

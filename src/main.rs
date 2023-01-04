@@ -14,6 +14,8 @@ struct Args {
 
     #[arg(long)]
     show_header: bool,
+    #[arg(long)]
+    show_sections: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -28,6 +30,9 @@ fn main() -> anyhow::Result<()> {
     if !args.show_header {
         elf64.header = None;
     }
+    if !args.show_sections {
+        elf64.sections = None;
+    }
 
     println!("{}", serde_json::to_string(&elf64)?);
 
@@ -38,12 +43,17 @@ fn main() -> anyhow::Result<()> {
 pub struct Elf64Display {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub header: Option<peachelf::header::Header64>,
+
+    #[serde(flatten)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sections: Option<peachelf::section::SectionSet64>,
 }
 
 impl From<peachelf::file::Elf64> for Elf64Display {
     fn from(f: peachelf::file::Elf64) -> Self {
         Self {
             header: Some(f.header),
+            sections: Some(f.sections),
         }
     }
 }

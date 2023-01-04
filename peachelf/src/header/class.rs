@@ -8,7 +8,7 @@ pub enum ElfClass {
     Class32,
     #[serde(rename = "class64")]
     Class64,
-    Num(u8),
+    Unknown(u8),
 }
 
 impl From<u8> for ElfClass {
@@ -17,7 +17,7 @@ impl From<u8> for ElfClass {
             0 => Self::None,
             1 => Self::Class32,
             2 => Self::Class64,
-            _ => Self::Num(v),
+            _ => Self::Unknown(v),
         }
     }
 }
@@ -28,7 +28,7 @@ impl Into<u8> for ElfClass {
             Self::None => 0,
             Self::Class32 => 1,
             Self::Class64 => 2,
-            Self::Num(v) => v,
+            Self::Unknown(v) => v,
         }
     }
 }
@@ -36,7 +36,7 @@ impl Into<u8> for ElfClass {
 impl std::fmt::Display for ElfClass {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Num(v) => {
+            Self::Unknown(v) => {
                 return write!(f, "unknown({:x})", v);
             }
 

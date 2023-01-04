@@ -10,7 +10,7 @@ pub enum ElfOsAbi {
     /// the object file uses GNU ELF extensions.
     #[serde(rename = "GNU")]
     Gnu,
-    Num(u8),
+    Unknown(u8),
 }
 
 impl From<u8> for ElfOsAbi {
@@ -20,7 +20,7 @@ impl From<u8> for ElfOsAbi {
             1 => Self::Hpux,
             2 => Self::NetBsd,
             3 => Self::Gnu,
-            _ => Self::Num(v),
+            _ => Self::Unknown(v),
         }
     }
 }
@@ -32,7 +32,7 @@ impl Into<u8> for ElfOsAbi {
             Self::Hpux => 1,
             Self::NetBsd => 2,
             Self::Gnu => 3,
-            Self::Num(v) => v,
+            Self::Unknown(v) => v,
         }
     }
 }
@@ -40,7 +40,7 @@ impl Into<u8> for ElfOsAbi {
 impl std::fmt::Display for ElfOsAbi {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Num(v) => {
+            Self::Unknown(v) => {
                 return write!(f, "UNKNOWN({:x})", v);
             }
 

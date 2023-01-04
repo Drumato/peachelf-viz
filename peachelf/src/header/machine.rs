@@ -8,7 +8,7 @@ pub enum ElfMachine {
     None,
     #[serde(rename = "amd64")]
     X8664,
-    Num(types::Elf64Half),
+    Unknown(types::Elf64Half),
 }
 
 impl From<types::Elf64Half> for ElfMachine {
@@ -16,7 +16,7 @@ impl From<types::Elf64Half> for ElfMachine {
         match v {
             0 => Self::None,
             0x3e => Self::X8664,
-            _ => Self::Num(v),
+            _ => Self::Unknown(v),
         }
     }
 }
@@ -26,7 +26,7 @@ impl Into<u16> for ElfMachine {
         match self {
             Self::None => 0,
             Self::X8664 => 0x3e,
-            Self::Num(v) => v,
+            Self::Unknown(v) => v,
         }
     }
 }
@@ -34,7 +34,7 @@ impl Into<u16> for ElfMachine {
 impl std::fmt::Display for ElfMachine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Num(v) => {
+            Self::Unknown(v) => {
                 return write!(f, "UNKNOWN({:x})", v);
             }
 
