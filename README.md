@@ -10,12 +10,12 @@ An ELF analyzer.
 ## Roadmap
 
 - [ ] parsing
-  - [ ] ELF header
+  - [x] ELF header
   - [ ] section data
     - [ ] symbol table
     - [ ] string table
     - [ ] relocation table
-  - [ ] program header
+  - [x] program header
   - [ ] core dump
   - [ ] static binary
 - [ ] generating
