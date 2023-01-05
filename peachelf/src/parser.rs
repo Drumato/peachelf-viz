@@ -1,4 +1,4 @@
-use crate::{file, header, section, types};
+use crate::{file, header, program_header, section, types};
 const ELF_MAGIC1: u8 = 0x7f;
 const ELF_MAGIC2: u8 = 'E' as u8;
 const ELF_MAGIC3: u8 = 'L' as u8;
@@ -8,18 +8,20 @@ use byteorder::ReadBytesExt;
 use std::io::Cursor;
 
 pub fn parse_elf64(file_bytes: &[u8]) -> anyhow::Result<file::Elf64> {
-    let elf64_header = {
+    let elf_header = {
         let mut cursor = std::io::Cursor::new(file_bytes);
 
         parse_elf64_header(&mut cursor)?
     };
 
-    let elf64_section_headers = parse_elf64_section_headers(file_bytes, &elf64_header)?;
-    let elf64_sections = parse_elf64_sections(file_bytes, elf64_section_headers, &elf64_header)?;
+    let elf_section_headers = parse_elf64_section_headers(file_bytes, &elf_header)?;
+    let elf_sections = parse_elf64_sections(file_bytes, elf_section_headers, &elf_header)?;
+    let elf_program_headers = parse_elf64_program_headers(file_bytes, &elf_header)?;
 
     Ok(file::Elf64 {
-        header: elf64_header,
-        sections: elf64_sections,
+        header: elf_header,
+        sections: elf_sections,
+        program_headers: elf_program_headers,
     })
 }
 
@@ -49,6 +51,7 @@ fn parse_elf64_sections(
             if hdr.name == 0x00 {
                 return section::Section64 {
                     name: String::new(),
+                    header: hdr,
                     data: section::SectionData64::Null,
                 };
             }
@@ -57,11 +60,12 @@ fn parse_elf64_sections(
 
             let result = parse_elf64_section_data(&hdr, data);
             if result.is_err() {
-                eprintln!("failed to parse the sections[{}] data", idx);
+                log::warn!("failed to parse the sections[{}] data", idx);
             }
 
             section::Section64 {
                 name,
+                header: hdr,
                 data: result.unwrap_or(section::SectionData64::Null),
             }
         })
@@ -70,11 +74,37 @@ fn parse_elf64_sections(
     Ok(section::SectionSet64 { sections })
 }
 
+fn parse_elf64_program_headers(
+    file_bytes: &[u8],
+    elf_header: &header::Header64,
+) -> anyhow::Result<program_header::ProgramHeaders64> {
+    let mut program_headers = Vec::with_capacity(elf_header.phnum as usize);
+
+    for header_idx in 0..elf_header.phnum as usize {
+        let start_offset =
+            elf_header.phoff as usize + (program_header::RawProgramHeader64::SIZE * header_idx);
+
+        let mut cursor = std::io::Cursor::new(&file_bytes[start_offset..]);
+        let hdr = parse_elf64_program_header(&mut cursor, elf_header.data.into())?;
+        program_headers.push(hdr);
+    }
+
+    Ok(program_header::ProgramHeaders64 { program_headers })
+}
+
+fn parse_elf64_program_header(
+    cursor: &mut Cursor<&[u8]>,
+    elf_data: u8,
+) -> anyhow::Result<program_header::ProgramHeader64> {
+    parse_raw_elf64_program_header(cursor, elf_data)
+        .map(|raw_header| program_header::ProgramHeader64::from(raw_header))
+}
+
 fn parse_elf64_section_headers(
     file_bytes: &[u8],
-    elf64_header: &header::Header64,
+    elf_header: &header::Header64,
 ) -> anyhow::Result<Vec<section::SectionHeader64>> {
-    parse_raw_elf64_section_headers(file_bytes, elf64_header).map(|sct_header| {
+    parse_raw_elf64_section_headers(file_bytes, elf_header).map(|sct_header| {
         sct_header
             .into_iter()
             .map(|raw_header| section::SectionHeader64::from(raw_header))
@@ -84,16 +114,16 @@ fn parse_elf64_section_headers(
 
 fn parse_raw_elf64_section_headers(
     file_bytes: &[u8],
-    elf64_header: &header::Header64,
+    elf_header: &header::Header64,
 ) -> anyhow::Result<Vec<section::RawSectionHeader64>> {
-    let mut sct_headers = Vec::with_capacity(elf64_header.shnum as usize);
+    let mut sct_headers = Vec::with_capacity(elf_header.shnum as usize);
 
-    for sct_header_idx in 0..elf64_header.shnum as usize {
+    for sct_header_idx in 0..elf_header.shnum as usize {
         let start_offset =
-            elf64_header.shoff as usize + (section::RawSectionHeader64::SIZE * sct_header_idx);
+            elf_header.shoff as usize + (section::RawSectionHeader64::SIZE * sct_header_idx);
 
         let mut cursor = std::io::Cursor::new(&file_bytes[start_offset..]);
-        let sct_header = parse_raw_elf64_section_header(&mut cursor, elf64_header.data.into())?;
+        let sct_header = parse_raw_elf64_section_header(&mut cursor, elf_header.data.into())?;
         sct_headers.push(sct_header);
     }
 
@@ -116,6 +146,24 @@ fn parse_raw_elf64_section_header(
     hdr.sh_info = parse_elf64_word(cursor, elf_data)?;
     hdr.sh_addralign = parse_elf64_xword(cursor, elf_data)?;
     hdr.sh_entsize = parse_elf64_xword(cursor, elf_data)?;
+
+    Ok(hdr)
+}
+
+fn parse_raw_elf64_program_header(
+    cursor: &mut Cursor<&[u8]>,
+    elf_data: u8,
+) -> anyhow::Result<program_header::RawProgramHeader64> {
+    let mut hdr = program_header::RawProgramHeader64::default();
+
+    hdr.p_type = parse_elf64_word(cursor, elf_data)?;
+    hdr.p_flags = parse_elf64_word(cursor, elf_data)?;
+    hdr.p_offset = parse_elf64_offset(cursor, elf_data)?;
+    hdr.p_vaddr = parse_elf64_addr(cursor, elf_data)?;
+    hdr.p_paddr = parse_elf64_addr(cursor, elf_data)?;
+    hdr.p_filesz = parse_elf64_xword(cursor, elf_data)?;
+    hdr.p_memsz = parse_elf64_xword(cursor, elf_data)?;
+    hdr.p_align = parse_elf64_xword(cursor, elf_data)?;
 
     Ok(hdr)
 }

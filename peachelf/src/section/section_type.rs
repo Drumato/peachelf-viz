@@ -1,5 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::types;
 
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum SectionType {
     Null,
     ProgBits,
@@ -19,7 +23,7 @@ pub enum SectionType {
     Group,
     SymTabShNdx,
     Num,
-    Unknown(types::Elf64Word),
+    Unknown { value: types::Elf64Word },
 }
 
 impl From<types::Elf64Word> for SectionType {
@@ -43,7 +47,7 @@ impl From<types::Elf64Word> for SectionType {
             17 => Self::Group,
             18 => Self::SymTabShNdx,
             19 => Self::Num,
-            _ => Self::Unknown(v),
+            _ => Self::Unknown { value: v },
         }
     }
 }

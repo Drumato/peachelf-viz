@@ -11,9 +11,11 @@ pub struct SectionSet64 {
 #[derive(Serialize, Deserialize)]
 pub struct Section64 {
     pub name: String,
+    pub header: SectionHeader64,
     pub data: SectionData64,
 }
 
+#[derive(Serialize, Deserialize)]
 #[repr(C)]
 pub struct SectionHeader64 {
     pub name: types::Elf64Word,
