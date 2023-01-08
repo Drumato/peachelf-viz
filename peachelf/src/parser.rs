@@ -323,3 +323,58 @@ fn parse_elf64_xword(
 ) -> anyhow::Result<types::Elf64Xword> {
     parse_elf64_addr(cursor, elf_data)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_elf64_header() {
+        let bytes: Vec<u8> = vec![
+            0x7f, 0x45, 0x4c, 0x46, // magic number
+            0x02, // ELF_CLASS
+            0x01, // ELF_DATA
+            0x01, // ELF_VERSION
+            0x00, // ELF_OSABI
+            0x00, // ELF_OSABI_VERSION
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // padding
+            0x03, 0x00, // file type
+            0x3e, 0x00, // machine architecture
+            0x01, 0x00, 0x00, 0x00, // version
+            0x40, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // entrypoint
+            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // phoff
+            0x60, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // shoff
+            0x00, 0x00, 0x00, 0x00, // flags
+            0x40, 0x00, // ehsize
+            0x38, 0x00, // phentsize
+            0x0d, 0x00, // phnum
+            0x40, 0x00, // shentsize
+            0x1d, 0x00, // shnum
+            0x1c, 0x00, // shstrndx
+        ];
+
+        let mut cursor = std::io::Cursor::new(bytes.as_slice());
+        let result = parse_elf64_header(&mut cursor);
+        assert!(result.is_ok());
+
+        let hdr = result.unwrap();
+
+        assert_eq!(header::ElfClass::Class64, hdr.class);
+        assert_eq!(header::ElfData::LSB, hdr.data);
+        assert_eq!(types::EV_CURRENT as types::Elf64Word, hdr.version);
+        assert_eq!(header::ElfOsAbi::SystemV, hdr.osabi);
+        assert_eq!(0, hdr.osabi_version);
+        assert_eq!(header::ElfType::Dyn, hdr.elf_type);
+        assert_eq!(header::ElfMachine::X8664, hdr.machine);
+        assert_eq!(0x1040, hdr.entry);
+        assert_eq!(64, hdr.phoff);
+        assert_eq!(13920, hdr.shoff);
+        assert_eq!(0x00, hdr.flags);
+        assert_eq!(64, hdr.ehsize);
+        assert_eq!(56, hdr.phentsize);
+        assert_eq!(13, hdr.phnum);
+        assert_eq!(64, hdr.shentsize);
+        assert_eq!(29, hdr.shnum);
+        assert_eq!(28, hdr.shstrndx);
+    }
+}
