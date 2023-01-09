@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::types;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(tag = "type")]
 pub enum SectionType {
     Null,

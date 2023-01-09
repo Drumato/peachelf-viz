@@ -104,18 +104,6 @@ fn parse_elf64_section_headers(
     file_bytes: &[u8],
     elf_header: &header::Header64,
 ) -> anyhow::Result<Vec<section::SectionHeader64>> {
-    parse_raw_elf64_section_headers(file_bytes, elf_header).map(|sct_header| {
-        sct_header
-            .into_iter()
-            .map(|raw_header| section::SectionHeader64::from(raw_header))
-            .collect()
-    })
-}
-
-fn parse_raw_elf64_section_headers(
-    file_bytes: &[u8],
-    elf_header: &header::Header64,
-) -> anyhow::Result<Vec<section::RawSectionHeader64>> {
     let mut sct_headers = Vec::with_capacity(elf_header.shnum as usize);
 
     for sct_header_idx in 0..elf_header.shnum as usize {
@@ -123,11 +111,19 @@ fn parse_raw_elf64_section_headers(
             elf_header.shoff as usize + (section::RawSectionHeader64::SIZE * sct_header_idx);
 
         let mut cursor = std::io::Cursor::new(&file_bytes[start_offset..]);
-        let sct_header = parse_raw_elf64_section_header(&mut cursor, elf_header.data.into())?;
+        let sct_header = parse_elf64_section_header(&mut cursor, elf_header.data.into())?;
         sct_headers.push(sct_header);
     }
 
     Ok(sct_headers)
+}
+
+fn parse_elf64_section_header(
+    cursor: &mut std::io::Cursor<&[u8]>,
+    elf_data: u8,
+) -> anyhow::Result<section::SectionHeader64> {
+    parse_raw_elf64_section_header(cursor, elf_data)
+        .map(|raw_header| section::SectionHeader64::from(raw_header))
 }
 
 fn parse_raw_elf64_section_header(
@@ -376,5 +372,68 @@ mod tests {
         assert_eq!(64, hdr.shentsize);
         assert_eq!(29, hdr.shnum);
         assert_eq!(28, hdr.shstrndx);
+    }
+
+    #[test]
+    fn test_parse_elf64_section_header() {
+        let bytes: Vec<u8> = vec![
+            0x1b, 0x00, 0x00, 0x00, // sh_name
+            0x01, 0x00, 0x00, 0x00, // sh_type
+            0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sh_flags
+            0x18, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sh_addr
+            0x18, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sh_offset
+            0x1c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sh_size
+            0x00, 0x00, 0x00, 0x00, // sh_link
+            0x00, 0x00, 0x00, 0x00, // sh_info
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sh_addralign
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sh_entsize
+        ];
+
+        let mut cursor = std::io::Cursor::new(bytes.as_slice());
+        let result = parse_elf64_section_header(&mut cursor, header::ELFDATA_LSB);
+        assert!(result.is_ok());
+
+        let hdr = result.unwrap();
+
+        assert_eq!(0x1b, hdr.name);
+        assert_eq!(section::SectionType::ProgBits, hdr.section_type);
+        assert_eq!(0x318, hdr.addr);
+        assert_eq!(0x318, hdr.offset);
+        assert_eq!(0x1c, hdr.size);
+        assert_eq!(0, hdr.entsize);
+        assert_eq!(0, hdr.link);
+        assert_eq!(0, hdr.info);
+        assert_eq!(section::SHF_ALLOC, hdr.flags);
+
+        assert_eq!(1, hdr.addralign);
+    }
+
+    #[test]
+    fn test_parse_elf64_program_header() {
+        let bytes: Vec<u8> = vec![
+            0x06, 0x00, 0x00, 0x00, // p_type
+            0x04, 0x00, 0x00, 0x00, // p_flags
+            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // p_offset
+            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // p_vaddr
+            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // p_paddr
+            0xd8, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // p_filesz
+            0xd8, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // p_memsz
+            0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // p_align
+        ];
+
+        let mut cursor = std::io::Cursor::new(bytes.as_slice());
+        let result = parse_elf64_program_header(&mut cursor, header::ELFDATA_LSB);
+        assert!(result.is_ok());
+
+        let hdr = result.unwrap();
+
+        assert_eq!(program_header::ProgramHeaderType::Phdr, hdr.header_type);
+        assert_eq!(0x40, hdr.offset);
+        assert_eq!(0x40, hdr.vaddr);
+        assert_eq!(0x40, hdr.paddr);
+        assert_eq!(0x2d8, hdr.filesz);
+        assert_eq!(0x2d8, hdr.memsz);
+        assert_eq!(program_header::PF_R, hdr.flags);
+        assert_eq!(0x8, hdr.align);
     }
 }

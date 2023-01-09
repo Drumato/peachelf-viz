@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::types;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(tag = "type")]
 pub enum ProgramHeaderType {
     Null,
