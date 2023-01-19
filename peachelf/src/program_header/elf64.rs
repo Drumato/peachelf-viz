@@ -4,6 +4,7 @@ use crate::types;
 
 use super::ProgramHeaderType;
 
+/// A set of the 64-bit ELF program header.
 #[derive(Serialize, Deserialize)]
 pub struct ProgramHeaders64 {
     pub program_headers: Vec<ProgramHeader64>,
@@ -24,6 +25,7 @@ impl From<RawProgramHeader64> for ProgramHeader64 {
     }
 }
 
+/// A representation of an 64-bit ELF program header.
 #[derive(Serialize, Deserialize)]
 pub struct ProgramHeader64 {
     pub header_type: ProgramHeaderType,
@@ -36,6 +38,7 @@ pub struct ProgramHeader64 {
     pub align: types::Elf64Xword,
 }
 
+/// A raw representation of an 32-bit ELF program header like Elf32_Phdr.
 #[repr(C)]
 pub struct RawProgramHeader32 {
     pub p_type: types::Elf32Word,
@@ -49,9 +52,11 @@ pub struct RawProgramHeader32 {
 }
 
 impl RawProgramHeader32 {
+    /// the size of the struct in memory.
     pub const SIZE: usize = 32;
 }
 
+/// A raw representation of an 64-bit ELF program header like Elf64_Phdr.
 #[derive(Default)]
 #[repr(C)]
 pub struct RawProgramHeader64 {
@@ -66,6 +71,7 @@ pub struct RawProgramHeader64 {
 }
 
 impl RawProgramHeader64 {
+    /// the size of the struct in memory.
     pub const SIZE: usize = 56;
 }
 

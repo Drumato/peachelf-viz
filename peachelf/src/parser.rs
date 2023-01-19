@@ -1,8 +1,4 @@
 use crate::{file, header, program_header, section, types};
-const ELF_MAGIC1: u8 = 0x7f;
-const ELF_MAGIC2: u8 = 'E' as u8;
-const ELF_MAGIC3: u8 = 'L' as u8;
-const ELF_MAGIC4: u8 = 'F' as u8;
 
 use byteorder::ReadBytesExt;
 use std::io::Cursor;
@@ -207,7 +203,10 @@ fn parse_elf_magic(cursor: &mut Cursor<&[u8]>) -> anyhow::Result<()> {
     let magic3 = cursor.read_u8()?;
     let magic4 = cursor.read_u8()?;
 
-    if magic1 != ELF_MAGIC1 || magic2 != ELF_MAGIC2 || magic3 != ELF_MAGIC3 || magic4 != ELF_MAGIC4
+    if magic1 != header::ELF_MAGIC1
+        || magic2 != header::ELF_MAGIC2
+        || magic3 != header::ELF_MAGIC3
+        || magic4 != header::ELF_MAGIC4
     {
         return Err(anyhow::anyhow!(
             "the elf magic-number must be [0x7f, 'E', 'L', 'F'], but got invalid value"
@@ -239,10 +238,10 @@ fn parse_rest_elf_identification(
     }
 
     Ok([
-        ELF_MAGIC1,
-        ELF_MAGIC2,
-        ELF_MAGIC3,
-        ELF_MAGIC4,
+        header::ELF_MAGIC1,
+        header::ELF_MAGIC2,
+        header::ELF_MAGIC3,
+        header::ELF_MAGIC4,
         elf_class,
         elf_data,
         elf_version,

@@ -19,6 +19,15 @@ pub use elf_type::*;
 mod machine;
 pub use machine::*;
 
+/// the first byte of the ELF magic number
+pub const ELF_MAGIC1: u8 = 0x7f;
+/// the second byte of the ELF magic number
+pub const ELF_MAGIC2: u8 = 'E' as u8;
+/// the third byte of the ELF magic number
+pub const ELF_MAGIC3: u8 = 'L' as u8;
+/// the fourth byte of the ELF magic number
+pub const ELF_MAGIC4: u8 = 'F' as u8;
+
 /// the length of the e_ident bytes-field.
 pub const EI_NIDENT: usize = 16;
 
