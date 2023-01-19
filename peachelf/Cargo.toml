@@ -6,6 +6,7 @@ license = "MIT"
 description = "A simple ELF library for parsing/generating"
 repository = "https://github.com/Drumato/peachelf-viz"
 readme = "README.md"
+documentation = "https://docs.rs/peachelf"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
