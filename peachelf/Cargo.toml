@@ -2,6 +2,10 @@
 name = "peachelf"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "A simple ELF library for parsing/generating"
+repository = "https://github.com/Drumato/peachelf-viz"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,3 +15,4 @@ anyhow = "1.0.68"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 log = "0.4"
+
