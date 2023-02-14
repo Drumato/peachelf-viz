@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 pub enum ElfMachine {
     #[serde(rename = "none")]
     None,
+    #[serde(rename = "aarch64")]
+    Aarch64,
     #[serde(rename = "amd64")]
     X8664,
     Unknown(types::Elf64Half),
@@ -15,7 +17,8 @@ impl From<types::Elf64Half> for ElfMachine {
     fn from(v: u16) -> Self {
         match v {
             0 => Self::None,
-            0x3e => Self::X8664,
+            62 => Self::X8664,
+            183 => Self::Aarch64,
             _ => Self::Unknown(v),
         }
     }
@@ -25,7 +28,8 @@ impl Into<u16> for ElfMachine {
     fn into(self) -> u16 {
         match self {
             Self::None => 0,
-            Self::X8664 => 0x3e,
+            Self::X8664 => 62,
+            Self::Aarch64 => 183,
             Self::Unknown(v) => v,
         }
     }
@@ -40,6 +44,7 @@ impl std::fmt::Display for ElfMachine {
 
             Self::None => "NONE",
             Self::X8664 => "Advanced Micro Devices X86-64",
+            Self::Aarch64 => "AArch64",
         };
 
         write!(f, "{}", s)
